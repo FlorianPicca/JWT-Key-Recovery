@@ -88,7 +88,7 @@ def recoverECDSAKey(token, hashalg, curve, compressed):
     y1, y2 = mod_sqrt(r ** 3 + curve.a * r + curve.b, curve.p)
     R1 = Point(r, y1, curve)
     R2 = Point(r, y2, curve)
-    # compute r^1
+    # compute r^-1
     r_inv = int(gmpy2.invert(r, curve.q))
     # compute message hash
     message = header + "." + body
