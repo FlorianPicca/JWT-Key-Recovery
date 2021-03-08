@@ -37,7 +37,7 @@ def getHash(header, body, hashalg, key):
 def removeSmallPrimes(x):
     i = 2
     while i < 2000:
-        if x % i == 0:
+        while x % i == 0:
             x = x//i
         i = gmpy2.next_prime(i)
     return int(x)
