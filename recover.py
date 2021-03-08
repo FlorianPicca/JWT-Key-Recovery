@@ -52,6 +52,11 @@ def recoverRSAKey(token1, token2, e, hashalg):
 
     sig_num1 = int(base64.b64decode(sig1 + "==").hex(), 16)
     sig_num2 = int(base64.b64decode(sig2 + "==").hex(), 16)
+
+    if sig_num1 == sig_num2:
+        print("Tokens must be different.")
+        return
+
     ks = getKeysize(sig_num1)
 
     tmp_key = genKey(ks, e)
