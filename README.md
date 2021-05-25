@@ -8,7 +8,7 @@ The following algorithms require two JWT tokens :
 - RS384
 - RS152
 
-The following algorithms require only one JWT token :
+The following algorithms require only one JWT token, but give better results with two :
 
 - ES256
 - ES384
@@ -57,7 +57,32 @@ MwIDAQAB
 -----END PUBLIC KEY-----
 ```
 
-### Example ES512
+### Example ES256 with 2 keys
+
+JWT 1 :
+```
+eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3MjAiLCJuYW1lIjoiSm9obiBEb2UiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyfQ.H8VTTQMtuf-aexINRZ3J0ikyFwgBp0l-9nrGkFk1vPIUTjM_xnFQsM4JPJVpNTQZZQdsUj9SGl-KVjDb-x6N-Q
+```
+
+JWT 2 :
+```
+eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODAiLCJuYW1lIjoiSm9obiBEb2UiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyfQ.sFLNApKrFRJmHSPsb7-TT5qAXCLdiWSIb7uB9ZZBpuguNY075oA_vGC4sVp3wgFwOU4jpf629GFqIW8dQzrAFw
+```
+
+Recover the public key :
+```
+./recover.py eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3MjAiLCJuYW1lIjoiSm9obiBEb2UiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyfQ.H8VTTQMtuf-aexINRZ3J0ikyFwgBp0l-9nrGkFk1vPIUTjM_xnFQsM4JPJVpNTQZZQdsUj9SGl-KVjDb-x6N-Q eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODAiLCJuYW1lIjoiSm9obiBEb2UiLCJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyfQ.sFLNApKrFRJmHSPsb7-TT5qAXCLdiWSIb7uB9ZZBpuguNY075oA_vGC4sVp3wgFwOU4jpf629GFqIW8dQzrAFw
+Recovering public key for algorithm ES256...
+Found public ECDSA key !
+x=7850540730117855537377310150564140534713067357541121232721010766305002029006
+y=65316312644653463644210322201871599477553959356638327946530363791985981247174
+-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEEVs/o5+uQbTjL3chynL4wXgUg2R9
+q9UU8I5mEovUf86QZ7kOBIjJwqnzD1omageEHWwHdBO6B+dFabmdT9POxg==
+-----END PUBLIC KEY-----
+```
+
+### Example ES512 with 1 key
 
 JWT :
 ```

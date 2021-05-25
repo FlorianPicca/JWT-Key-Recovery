@@ -78,25 +78,43 @@ def recoverRSAKey(token1, token2, e, hashalg):
     print(RSA.construct((n, e)).exportKey(format="PEM").decode())
 
 
-def recoverECDSAKey(token, hashalg, curve, compressed):
-    header, body, sig = token.split(".")
-    rs = base64.b64decode(sig + "==")
-    n = len(rs)//2
-    r = int(rs[:n].hex(), 16)
-    s = int(rs[n:].hex(), 16)
-    # compute the 2 points having r has X coordinate
-    y1, y2 = mod_sqrt(r ** 3 + curve.a * r + curve.b, curve.p)
-    R1 = Point(r, y1, curve)
-    R2 = Point(r, y2, curve)
-    # compute r^-1
-    r_inv = int(gmpy2.invert(r, curve.q))
-    # compute message hash
-    message = header + "." + body
-    h = int(hashalg.new(message.encode()).hexdigest(), 16)
-    G = Point(curve.gx, curve.gy, curve)
-    # recover the two possible public keys
-    k1 = r_inv*(s*R1 - h*G)
-    k2 = r_inv*(s*R2 - h*G)
+def recoverECDSAKey(tokens, hashalg, curve, compressed):
+
+    def recoverKeys(r, s, curve):
+        # compute the 2 points having r has X coordinate
+        y1, y2 = mod_sqrt(r ** 3 + curve.a * r + curve.b, curve.p)
+        R1 = Point(r, y1, curve)
+        R2 = Point(r, y2, curve)
+        # compute r^-1
+        r_inv = int(gmpy2.invert(r, curve.q))
+        # compute message hash
+        message = header + "." + body
+        h = int(hashalg.new(message.encode()).hexdigest(), 16)
+        G = Point(curve.gx, curve.gy, curve)
+        # recover the two possible public keys
+        k1 = r_inv * (s * R1 - h * G)
+        k2 = r_inv * (s * R2 - h * G)
+        return k1, k2
+
+    keys = []
+    for t in tokens:
+        header, body, sig = t.split(".")
+        rs = base64.b64decode(sig + "==")
+        n = len(rs)//2
+        r = int(rs[:n].hex(), 16)
+        s = int(rs[n:].hex(), 16)
+        for k in recoverKeys(r, s, curve):
+            if k in keys:
+                # can only happen if we have at least two tokens
+                # if a key is already in the set, we are sure it's the right one
+                print("Found public ECDSA key !")
+                print(f"x={k.x}\ny={k.y}")
+                k_ = ECC.construct(curve=curve.name.lower(), point_x=k.x, point_y=k.y)
+                print(k_.export_key(format="PEM", compress=compressed))
+                return
+            keys.append(k)
+    # If we get here, it means we only got 1 token and can't distinguish the key
+    k1, k2 = keys[:2]
     k1_ = ECC.construct(curve=curve.name.lower(), point_x=k1.x, point_y=k1.y)
     k2_ = ECC.construct(curve=curve.name.lower(), point_x=k2.x, point_y=k2.y)
     print("Found 2 public ECDSA keys !")
@@ -130,16 +148,27 @@ def handleRSA(alg, tokens, e):
         print(f"Algorithm {alg} not supported.")
 
 
-def handleECDSA(alg, token, compressed):
+def handleECDSA(alg, tokens, compressed):
+    if len(tokens) >= 2:
+        header2 = tokens[1].split(".")[0]
+        # add "==" to cope with missing padding
+        header2 = json.loads(base64.b64decode(header2 + "=="))
+        if header2["alg"] != alg:
+            print(f"Tokens don't have the same algorithm : {header2['alg']} != {alg}")
+            return
+
     print(f"Recovering public key for algorithm {alg}...")
-    print("There are 2 public keys that can produce this signature.")
-    print("As it's not possible to know which one was used, both are displayed below.")
+
+    if len(tokens) == 1:
+        print("There are 2 public keys that can produce this signature.")
+        print("As it's not possible to know which one was used, both are displayed below.")
+
     if alg == "ES256":
-        recoverECDSAKey(token, SHA256, P256, compressed)
+        recoverECDSAKey(tokens, SHA256, P256, compressed)
     elif alg == "ES384":
-        recoverECDSAKey(token, SHA384, P384, compressed)
+        recoverECDSAKey(tokens, SHA384, P384, compressed)
     elif alg == "ES512":
-        recoverECDSAKey(token, SHA512, P521, compressed)
+        recoverECDSAKey(tokens, SHA512, P521, compressed)
     else:
         print(f"Algorithm {alg} not supported.")
 
@@ -172,7 +201,7 @@ if __name__ == "__main__":
         print(f"Sadly it's not possible to recover the public key used with algorithm {alg}, because it uses a non-deterministic padding.")
     # ECDSA P-256
     elif alg[:2] == "ES":
-        handleECDSA(alg, tokens[0], args.compressed)
+        handleECDSA(alg, tokens, args.compressed)
     # HMAC
     elif alg[:2] == "HS":
         print(f"Algorithm {alg} is based on HMAC, which doesn't use a public key.")
