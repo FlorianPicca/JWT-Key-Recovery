@@ -44,7 +44,10 @@ def removeSmallPrimes(x):
 
 def getKeysize(sig):
     sig_size = sig.bit_length()
-    return pow(2, math.ceil(math.log(sig_size, 2)))
+    # do not round to the nearest power of 2
+    # otherwise will not be able to recover keys of non-standard sizes
+    # having a small length difference with the real key does not matter in practice
+    return sig_size
 
 def recoverRSAKey(token1, token2, e, hashalg):
     header1, body1, sig1 = token1.split(".")
