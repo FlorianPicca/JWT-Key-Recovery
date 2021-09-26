@@ -7,7 +7,7 @@ import argparse
 from Crypto.Signature import pkcs1_15
 from Crypto.Hash import SHA256, SHA384, SHA512
 from Crypto.PublicKey import RSA
-from Crypto.Util.number import getPrime
+from Crypto.Util.number import getPrime, isPrime
 from Crypto.PublicKey import ECC
 from fastecdsa.curve import P256, P384, P521
 from fastecdsa.point import Point
@@ -76,15 +76,25 @@ def recoverRSAKey(token1, token2, e, hashalg):
     sig_num2 = gmpy2.mpz(sig_num2)
     n = gmpy2.gcd(sig_num1**e - h1, sig_num2**e - h2)
     dprint(f"GDC result : {n}")
+
     # returned n can be a small multiple of the real n
     n = removeSmallPrimes(n)
     if n == 1:
         print("Failed to recover public RSA key !")
         print(f"Maybe e != {e} ?")
         return
+    
+    # returned n should never be a prime, otherwise this means we have factored the public key
+    # which should never happen in practice (but maybe in CTF challenges)
+    if isPrime(n):
+        print("Found a prime public key ?!")
+        print(f"{n=}\n{e=}")
+        print(f"You may want to rerun this script with the -v flag")
+        return
+
     print("Found public RSA key !")
     dprint(f"Real key size : {n.bit_length()} bits")
-    print(f"n={n}\ne={e}")
+    print(f"{n=}\n{e=}")
     print(RSA.construct((n, e)).exportKey(format="PEM").decode())
 
 
