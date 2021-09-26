@@ -39,8 +39,9 @@ def getHash(header, body, hashalg, key):
     return h
 
 def removeSmallPrimes(x):
+    dprint(f"Removing small factors up to {args.f}")
     i = 2
-    while i < 2000:
+    while i <= args.f:
         while x % i == 0:
             x = x//i
             dprint(f"Removed small factor : {i}")
@@ -83,7 +84,7 @@ def recoverRSAKey(token1, token2, e, hashalg):
         print("Failed to recover public RSA key !")
         print(f"Maybe e != {e} ?")
         return
-    
+
     # returned n should never be a prime, otherwise this means we have factored the public key
     # which should never happen in practice (but maybe in CTF challenges)
     if isPrime(n):
@@ -199,6 +200,8 @@ def getArgs():
     parser.add_argument("-e", type=int, help="The RSA public exponent used. (default=65537)", default=65537, required=False)
     parser.add_argument("-compressed", action="store_true", help="Use compressed points for ECDSA public key format. (default=False)", required=False)
     parser.add_argument("-v", action="store_true", help="Verbose output, useful for debugging.", required=False)
+    parser.add_argument("-f", type=int, help="Remove small factors up to this value. (default=2000)", default=2000,
+                        required=False)
     return parser.parse_args()
 
 if __name__ == "__main__":
