@@ -13,6 +13,10 @@ from fastecdsa.curve import P256, P384, P521
 from fastecdsa.point import Point
 from fastecdsa.util import mod_sqrt
 
+def dprint(m):
+    if args.v:
+        print(f"[DEBUG] : {m}")
+
 def genKey(keysize, e):
     # generate the key manually because pycryptodome doesn't accept key sizes < 1024 bits
     d = None
@@ -39,6 +43,7 @@ def removeSmallPrimes(x):
     while i < 2000:
         while x % i == 0:
             x = x//i
+            dprint(f"Removed small factor : {i}")
         i = gmpy2.next_prime(i)
     return int(x)
 
@@ -61,7 +66,7 @@ def recoverRSAKey(token1, token2, e, hashalg):
         return
 
     ks = getKeysize(sig_num1)
-
+    dprint(f"Estimated key size (signature size) : {ks} bits")
     tmp_key = genKey(ks, e)
     h1 = getHash(header1, body1, hashalg, tmp_key)
     h2 = getHash(header2, body2, hashalg, tmp_key)
@@ -70,6 +75,7 @@ def recoverRSAKey(token1, token2, e, hashalg):
     sig_num1 = gmpy2.mpz(sig_num1)
     sig_num2 = gmpy2.mpz(sig_num2)
     n = gmpy2.gcd(sig_num1**e - h1, sig_num2**e - h2)
+    dprint(f"GDC result : {n}")
     # returned n can be a small multiple of the real n
     n = removeSmallPrimes(n)
     if n == 1:
@@ -77,6 +83,7 @@ def recoverRSAKey(token1, token2, e, hashalg):
         print(f"Maybe e != {e} ?")
         return
     print("Found public RSA key !")
+    dprint(f"Real key size : {n.bit_length()} bits")
     print(f"n={n}\ne={e}")
     print(RSA.construct((n, e)).exportKey(format="PEM").decode())
 
@@ -181,6 +188,7 @@ def getArgs():
     parser.add_argument('token', type=str, nargs='+', help='A JWT token.')
     parser.add_argument("-e", type=int, help="The RSA public exponent used. (default=65537)", default=65537, required=False)
     parser.add_argument("-compressed", action="store_true", help="Use compressed points for ECDSA public key format. (default=False)", required=False)
+    parser.add_argument("-v", action="store_true", help="Verbose output, useful for debugging.", required=False)
     return parser.parse_args()
 
 if __name__ == "__main__":
